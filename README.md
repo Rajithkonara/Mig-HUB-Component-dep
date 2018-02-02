@@ -13,15 +13,18 @@ This is the platform for both the product Digital Enable Hub &  Digital Enable G
 If you are using authorize-token-generator .jar file please plase the mig_aouth_token.properties file in <HUB HOME>/repository/conf/ location.
   
   To enbale Api invocation Handler you should add below configuration to Mig and Hub Configurations.
-Belom xml snippet should be added in mobile-connect.xml  
+Below xml snippet should be added in mobile-connect.xml  
 
 mobile-connect.xml
 ---------------------
-  <SupportedGrantType>
+```
+<SupportedGrantType>
                 <GrantTypeName>authorization_code</GrantTypeName>
                 <!--GrantTypeHandlerImplClass>org.wso2.carbon.identity.oauth2.token.handlers.grant.AuthorizationCodeGrantHandler</GrantTypeHandlerImplClass-->
                 <GrantTypeHandlerImplClass>com.wso2telco.grant.handler.CustomAuthCodeGrant</GrantTypeHandlerImplClass>
-            </SupportedGrantType>
+</SupportedGrantType>
+  
+ ```
 ------------------------
 
 
