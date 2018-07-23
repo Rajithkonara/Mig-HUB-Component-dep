@@ -36,3 +36,10 @@ Edit the API synapse to add below handler at the top of handlers [on our auth to
 <handler class="com.wso2telco.dep.apihandler.ApiInvocationHandler"/>
 For token, userinfo API synapse add the below snippet additionaly before <send> tag of <inSequence>
 
+
+# Using for Basic Auth GW
+
+Copy the api-invocation-handler-1.0.0.jar file to <HUB_HOME>/repository/componenet/dropins/
+
+Edit the API synapse to add below handler at the top of handlers 
+<handler class="com.wso2telco.dep.apihandler.ApiInvocationHandler"/>
