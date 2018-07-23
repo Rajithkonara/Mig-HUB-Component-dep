@@ -21,6 +21,11 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.wso2telco.dep.apihandler.util.ServicesHolder;
+import org.apache.axiom.om.OMAbstractFactory;
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.OMFactory;
+import org.apache.axiom.om.OMNamespace;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,6 +38,18 @@ import com.wso2telco.dep.apihandler.dto.TokenDTO;
 import com.wso2telco.dep.apihandler.util.APIManagerDBUtil;
 import com.wso2telco.dep.apihandler.util.ReadPropertyFile;
 import com.wso2telco.dep.apihandler.util.TokenPoolUtil;
+import org.wso2.carbon.context.PrivilegedCarbonContext;
+import org.wso2.carbon.identity.oauth.IdentityOAuthAdminException;
+import org.wso2.carbon.identity.oauth.OAuthAdminService;
+import org.wso2.carbon.identity.oauth.dto.OAuthConsumerAppDTO;
+import org.wso2.carbon.user.core.UserStoreException;
+import org.wso2.carbon.user.core.UserStoreManager;
+import org.wso2.carbon.user.core.config.RealmConfiguration;
+import org.apache.synapse.transport.passthru.PassThroughConstants;
+import org.apache.synapse.*;
+import org.apache.axis2.Constants;
+import org.apache.http.HttpStatus;
+import org.wso2.carbon.apimgt.gateway.handlers.Utils;
 
 public class ApiInvocationHandler extends AbstractHandler {
 	private static final Log log = LogFactory.getLog(ApiInvocationHandler.class);
@@ -45,26 +62,50 @@ public class ApiInvocationHandler extends AbstractHandler {
 	private static final String TEMP_AUTH_HEADER = "tempAuthVal";
 	private static final String TOKEN_TYPE = "Bearer ";
 	private static Map<String, String> spToken = new HashMap();
+	private UserStoreManager userStoreManager;
 
 	public ApiInvocationHandler() {
+
+		try {
+			RealmConfiguration config = new RealmConfiguration();
+			userStoreManager = ServicesHolder.getInstance().getRealmService().getUserRealm(config).getUserStoreManager();
+		} catch (UserStoreException e) {
+			String errorMsg = "Error while initiating UserStoreManager";
+			log.error(errorMsg, e);
+		}
 	}
+
 
 	public boolean handleRequest(org.apache.synapse.MessageContext messageContext) {
-		handleAPIWise(messageContext);
-		return true;
-	}
 
-	private void handleAPIWise(org.apache.synapse.MessageContext messageContext) {
-		String fullPath = (String) ((Axis2MessageContext) messageContext).getProperty("REST_FULL_REQUEST_PATH");
 		Map headerMap = (Map) ((Axis2MessageContext) messageContext).getAxis2MessageContext()
 				.getProperty("TRANSPORT_HEADERS");
 
-		if (fullPath.contains("authorize")) {
-			handleAuthRequest(fullPath, headerMap);
-		} else if (fullPath.contains("token")) {
-			handleTokenRequest(messageContext, headerMap);
-		} else if (fullPath.contains("userinfo"))
-			handleUserInfoRequest(messageContext, headerMap);
+		if (!headerMap.containsKey(AUTH_HEADER)) {
+			return true;
+		}
+
+		if (headerMap.get(AUTH_HEADER).toString().contains("Bearer")) {
+			return true;
+		}
+
+		try {
+			handleAPIWise(messageContext);
+		} catch (UserStoreException e) {
+			log.error(getFaultPayload(), e);
+			handleAuthFailure(messageContext, e);
+			return false;
+		} catch (Exception ex) {
+			log.error("Authentication Failure");
+		}
+		return true;
+	}
+
+	private void handleAPIWise(org.apache.synapse.MessageContext messageContext) throws UserStoreException {
+		Map headerMap = (Map) ((Axis2MessageContext) messageContext).getAxis2MessageContext()
+				.getProperty("TRANSPORT_HEADERS");
+
+			handleAuthRequest(headerMap.get(AUTH_HEADER), headerMap);
 	}
 
 	private void handleUserInfoRequest(org.apache.synapse.MessageContext messageContext, Map headerMap) {
@@ -77,9 +118,38 @@ public class ApiInvocationHandler extends AbstractHandler {
 		processTokenResponse(headerMap, clientId);
 	}
 
-	private void handleAuthRequest(String fullPath, Map headerMap) {
-		String clientId = getAuthClientKey(fullPath);
-		processTokenResponse(headerMap, clientId);
+	private void handleAuthRequest(Object authorization, Map headerMap) throws UserStoreException {
+
+		String username = getUserNamePassword((String) authorization, 0);
+		String password = getUserNamePassword((String) authorization, 1);
+		String consumerKey = "";
+		boolean authStatus = false;
+
+		try {
+			PrivilegedCarbonContext.startTenantFlow();
+			authStatus = userStoreManager.authenticate(username, password);
+
+			if (authStatus) {
+				PrivilegedCarbonContext.getThreadLocalCarbonContext().setUsername(username);
+				PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain("carbon.super");
+				PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(-1234);
+				OAuthAdminService oAuthAdminServic = new OAuthAdminService();
+				OAuthConsumerAppDTO[] oauthapps = oAuthAdminServic.getAllOAuthApplicationData();
+
+				if (oauthapps == null) {
+					log.error("No Application exists for user");
+				}
+				consumerKey = oauthapps[0].getOauthConsumerKey();
+				PrivilegedCarbonContext.endTenantFlow();
+
+				processTokenResponse(headerMap, consumerKey);
+			} else {
+				throw new UserStoreException("Invalid Credentials");
+			}
+		} catch (IdentityOAuthAdminException e) {
+			log.debug("Service Error");
+		}
+
 	}
 
 	private String getTokenClientKey(String basicAuth) {
@@ -88,8 +158,14 @@ public class ApiInvocationHandler extends AbstractHandler {
 		return decodeString.split(":")[0];
 	}
 
+	private String getUserNamePassword(String basicAuth, int index) {
+		byte[] valueDecoded = Base64.decodeBase64(basicAuth.split(" ")[1].getBytes());
+		String decodeString = new String(valueDecoded);
+		return decodeString.split(":")[index];
+	}
+
 	private String getAuthClientKey(String fullPath) {
-		return fullPath.split("client_id=")[1].split("&")[0];
+		return fullPath.split("\\s")[1];
 	}
 
 	private String swapHeader(org.apache.synapse.MessageContext messageContext, Map headerMap) {
@@ -106,7 +182,7 @@ public class ApiInvocationHandler extends AbstractHandler {
 			token = APIManagerDBUtil.getTokenDetailsFromAPIManagerDB(clientId).getAccessToken();
 			spToken.put(clientId, token);
 		}
-		headerMap.put("Authorization", "Bearer " + token);
+		headerMap.put("Authorization", TOKEN_TYPE + token);
 	}
 
 	private void handleByTokenPool(String clientId, TokenDTO tokenDTO) {
@@ -149,4 +225,49 @@ public class ApiInvocationHandler extends AbstractHandler {
 		log.debug("ecncoded value is " + base64EncodedAouthString);
 		return base64EncodedAouthString;
 	}
+
+	private void handleAuthFailure(MessageContext messageContext, Exception e) {
+		messageContext.setProperty(SynapseConstants.ERROR_CODE, e);
+		messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, e);
+		messageContext.setProperty(SynapseConstants.ERROR_EXCEPTION, e);
+
+		org.apache.axis2.context.MessageContext axis2MC = ((Axis2MessageContext) messageContext).
+				getAxis2MessageContext();
+		// This property need to be set to avoid sending the content in pass-through pipe (request message)
+		// as the response.
+		axis2MC.setProperty(PassThroughConstants.MESSAGE_BUILDER_INVOKED, Boolean.TRUE);
+		axis2MC.setProperty(Constants.Configuration.MESSAGE_TYPE, "application/soap+xml");
+		int status;
+
+			status = HttpStatus.SC_UNAUTHORIZED;
+
+		if (messageContext.isDoingPOX() || messageContext.isDoingGET()) {
+			Utils.setFaultPayload(messageContext, getFaultPayload());
+		} else {
+			Utils.setSOAPFault(messageContext, "Client", "Authentication Failure", e.getMessage());
+		}
+		axis2MC.setProperty("messageType", "application/json");
+		Utils.sendFault(messageContext, status);
+	}
+
+
+	private OMElement getFaultPayload() {
+		OMFactory fac = OMAbstractFactory.getOMFactory();
+		OMNamespace ns = fac.createOMNamespace("Failed", "failed");
+		OMElement payload = fac.createOMElement("fault", ns);
+
+		OMElement errorCode = fac.createOMElement("code", ns);
+		errorCode.setText("401");
+		OMElement errorMessage = fac.createOMElement("message", ns);
+		errorMessage.setText("Authentication failure");
+		OMElement errorDetail = fac.createOMElement("description", ns);
+		errorDetail.setText("Authentication failure");
+
+		payload.addChild(errorCode);
+		payload.addChild(errorMessage);
+		payload.addChild(errorDetail);
+		return payload;
+	}
+
+
 }
