@@ -42,4 +42,31 @@ For token, userinfo API synapse add the below snippet additionaly before <send> 
 Copy the api-invocation-handler-1.0.0.jar file to <HUB_HOME>/repository/componenet/dropins/
 
 Edit the API synapse to add below handler at the top of handlers 
-<handler class="com.wso2telco.dep.apihandler.ApiInvocationHandler"/>
+
+Example Syanpse file conating the API Invocation Handler
+---------------------
+```
+   <handlers>
+      <handler class="com.wso2telco.dep.apihandler.ApiInvocationHandler"/>
+      <handler class="org.wso2.carbon.apimgt.gateway.handlers.common.APIMgtLatencyStatsHandler"/>
+      <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler">
+         <property name="apiImplementationType" value="ENDPOINT"/>
+      </handler>
+      <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.APIAuthenticationHandler"/>
+      <handler class="org.wso2.carbon.apimgt.gateway.handlers.throttling.APIThrottleHandler">
+         <property name="policyKey" value="gov:/apimgt/applicationdata/tiers.xml"/>
+         <property name="policyKeyApplication"
+                   value="gov:/apimgt/applicationdata/app-tiers.xml"/>
+         <property name="id" value="A"/>
+         <property name="policyKeyResource"
+                   value="gov:/apimgt/applicationdata/res-tiers.xml"/>
+      </handler>
+      <handler class="org.wso2.carbon.apimgt.usage.publisher.APIMgtUsageHandler"/>
+      <handler class="org.wso2.carbon.apimgt.usage.publisher.APIMgtGoogleAnalyticsTrackingHandler">
+         <property name="configKey" value="gov:/apimgt/statistics/ga-config.xml"/>
+      </handler>
+      <handler class="org.wso2.carbon.apimgt.gateway.handlers.ext.APIManagerExtensionHandler"/>
+      <handler class="com.wso2telco.dep.validator.handler.APIInfoHandler"/>
+   </handlers>
+    ```
+------------------------
