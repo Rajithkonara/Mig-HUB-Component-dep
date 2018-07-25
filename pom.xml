@@ -52,7 +52,7 @@
         <url>https://github.com/WSO2Telco/Mig-HUB-Component-dep.git</url>
         <developerConnection>scm:git:https://github.com/WSO2Telco/Mig-HUB-Component-dep.git</developerConnection>
         <connection>scm:git:https://github.com/WSO2Telco/Mig-HUB-Component-dep.git</connection>
-        <tag>33</tag>
+        <tag>v2_2_6</tag>
     </scm>
 
     <repositories>
