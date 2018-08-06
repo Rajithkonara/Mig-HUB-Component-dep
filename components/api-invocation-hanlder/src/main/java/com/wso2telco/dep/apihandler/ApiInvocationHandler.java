@@ -161,7 +161,10 @@ public class ApiInvocationHandler extends AbstractHandler {
 	}
 
 	private String getUserNamePassword(String basicAuth, int index) {
-		byte[] valueDecoded = DatatypeConverter.parseBase64Binary(basicAuth.split("Basic ")[1]);
+		byte[] valueDecoded=null;
+		if(basicAuth.startsWith("Basic ")) {
+			valueDecoded = DatatypeConverter.parseBase64Binary(basicAuth.split("Basic ")[1]);
+		}
 		String decodeString = new String(valueDecoded);
 		return decodeString.split(":")[index];
 	}
