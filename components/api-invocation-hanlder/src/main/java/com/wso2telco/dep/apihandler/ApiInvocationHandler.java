@@ -63,6 +63,7 @@ public class ApiInvocationHandler extends AbstractHandler {
 	private static final String AUTH_HEADER = "Authorization";
 	private static final String TEMP_AUTH_HEADER = "tempAuthVal";
 	private static final String TOKEN_TYPE = "Bearer ";
+	private static final String TOKEN_TYPE_BASIC = "Basic ";
 	private static Map<String, String> spToken = new HashMap();
 	private UserStoreManager userStoreManager;
 
@@ -155,15 +156,15 @@ public class ApiInvocationHandler extends AbstractHandler {
 	}
 
 	private String getTokenClientKey(String basicAuth) {
-		byte[] valueDecoded = DatatypeConverter.parseBase64Binary(basicAuth.split("Basic ")[1]);
+		byte[] valueDecoded = DatatypeConverter.parseBase64Binary(basicAuth.split(TOKEN_TYPE_BASIC)[1]);
 		String decodeString = new String(valueDecoded);
 		return decodeString.split(":")[0];
 	}
 
 	private String getUserNamePassword(String basicAuth, int index) {
 		byte[] valueDecoded=null;
-		if(basicAuth.startsWith("Basic ")) {
-			valueDecoded = DatatypeConverter.parseBase64Binary(basicAuth.split("Basic ")[1]);
+		if(basicAuth.startsWith(TOKEN_TYPE_BASIC)) {
+			valueDecoded = DatatypeConverter.parseBase64Binary(basicAuth.split(TOKEN_TYPE_BASIC)[1]);
 		}
 		String decodeString = new String(valueDecoded);
 		return decodeString.split(":")[index];
