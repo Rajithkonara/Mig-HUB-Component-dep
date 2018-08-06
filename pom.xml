@@ -21,7 +21,7 @@
     <groupId>com.wso2telco.dep</groupId>
     <artifactId>component-dep</artifactId>
     <packaging>pom</packaging>
-    <version>2.2.8</version>
+    <version>2.2.9-SNAPSHOT</version>
     <name>WSO2Telco -Digital Enable Platform Component</name>
     <description>WSO2Telco DEP Aggregate Pom</description>
     <url>http://wso2telco.com</url>
@@ -53,7 +53,7 @@
         <url>https://github.com/WSO2Telco/Mig-HUB-Component-dep.git</url>
         <developerConnection>scm:git:https://github.com/WSO2Telco/Mig-HUB-Component-dep.git</developerConnection>
         <connection>scm:git:https://github.com/WSO2Telco/Mig-HUB-Component-dep.git</connection>
-        <tag>v2_2_8</tag>
+        <tag>33</tag>
     </scm>
 
     <repositories>
