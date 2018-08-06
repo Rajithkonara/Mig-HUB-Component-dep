@@ -51,6 +51,8 @@ import org.apache.axis2.Constants;
 import org.apache.http.HttpStatus;
 import org.wso2.carbon.apimgt.gateway.handlers.Utils;
 
+import javax.xml.bind.DatatypeConverter;
+
 public class ApiInvocationHandler extends AbstractHandler {
 	private static final Log log = LogFactory.getLog(ApiInvocationHandler.class);
 	public static final String NEW_LINE = System.getProperty("line.separator");
@@ -153,13 +155,13 @@ public class ApiInvocationHandler extends AbstractHandler {
 	}
 
 	private String getTokenClientKey(String basicAuth) {
-		byte[] valueDecoded = Base64.decodeBase64(basicAuth.split(" ")[1].getBytes());
+		byte[] valueDecoded = DatatypeConverter.parseBase64Binary(basicAuth.split("Basic ")[1]);
 		String decodeString = new String(valueDecoded);
 		return decodeString.split(":")[0];
 	}
 
 	private String getUserNamePassword(String basicAuth, int index) {
-		byte[] valueDecoded = Base64.decodeBase64(basicAuth.split(" ")[1].getBytes());
+		byte[] valueDecoded = DatatypeConverter.parseBase64Binary(basicAuth.split("Basic ")[1]);
 		String decodeString = new String(valueDecoded);
 		return decodeString.split(":")[index];
 	}
