@@ -38,6 +38,7 @@ import com.wso2telco.dep.apihandler.dto.TokenDTO;
 import com.wso2telco.dep.apihandler.util.APIManagerDBUtil;
 import com.wso2telco.dep.apihandler.util.ReadPropertyFile;
 import com.wso2telco.dep.apihandler.util.TokenPoolUtil;
+import org.wso2.carbon.apimgt.gateway.handlers.security.APISecurityConstants;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.identity.oauth.IdentityOAuthAdminException;
 import org.wso2.carbon.identity.oauth.OAuthAdminService;
@@ -239,6 +240,13 @@ public class ApiInvocationHandler extends AbstractHandler {
 
 		org.apache.axis2.context.MessageContext axis2MC = ((Axis2MessageContext) messageContext).
 				getAxis2MessageContext();
+		Mediator sequence = messageContext.getSequence(APISecurityConstants.API_AUTH_FAILURE_HANDLER);
+		// Invoke the custom error handler specified by the user
+		if (sequence != null && !sequence.mediate(messageContext)) {
+			// If needed user should be able to prevent the rest of the fault handling
+			// logic from getting executed
+			return;
+		}
 		// This property need to be set to avoid sending the content in pass-through pipe (request message)
 		// as the response.
 		axis2MC.setProperty(PassThroughConstants.MESSAGE_BUILDER_INVOKED, Boolean.TRUE);
