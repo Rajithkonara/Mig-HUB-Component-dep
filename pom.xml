@@ -46,6 +46,7 @@
 
     <modules>
         <module>components/api-invocation-hanlder</module>
+        <module>components/token-regenerator</module>
     </modules>
 
     <scm>
