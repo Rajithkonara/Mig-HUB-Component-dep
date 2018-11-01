@@ -192,7 +192,7 @@ public class ApiInvocationHandler extends AbstractHandler {
 			token = (String) spToken.get(clientId);
 		} else {
 			token = APIManagerDBUtil.getTokenDetailsFromAPIManagerDB(clientId).getAccessToken();
-			if (token != null) {
+			if (token != null && !token.isEmpty()) {
 				spToken.put(clientId, token);
 			}
 		}
