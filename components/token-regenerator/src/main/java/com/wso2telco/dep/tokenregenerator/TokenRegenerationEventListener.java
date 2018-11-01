@@ -78,7 +78,7 @@ public class TokenRegenerationEventListener extends AbstractUserOperationEventLi
             PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(-1234);
 
             if (log.isDebugEnabled()) {
-                log.debug("Fetching application details ");
+                log.debug("Fetching application details for "+userName);
             }
             OAuthConsumerAppDTO[] oauthapps = oAuthAdminService.getAllOAuthApplicationData();
 
@@ -88,7 +88,7 @@ public class TokenRegenerationEventListener extends AbstractUserOperationEventLi
                 tokenReqDTO.setClientSecret(oauthapps[0].getOauthConsumerSecret());
                 tokenReqDTO.setCallbackURI(oauthapps[0].getCallbackUrl());
                 tokenReqDTO.setScope(applicationScope);
-                tokenReqDTO.setTenantDomain(null);
+                tokenReqDTO.setTenantDomain(TENANT_DOMAIN);
                 tokenReqDTO.setPkceCodeVerifier(null);
 
                 if (log.isDebugEnabled()) {
@@ -105,7 +105,7 @@ public class TokenRegenerationEventListener extends AbstractUserOperationEventLi
                 OAuth2Service service = (OAuth2Service) PrivilegedCarbonContext.getThreadLocalCarbonContext()
                         .getOSGiService(OAuth2Service.class);
                 if(log.isDebugEnabled()) {
-                    log.debug("Starting to issue AccessToken");
+                    log.debug("Starting to issue AccessToken for User "+userName);
                 }
 
                 OAuth2AccessTokenRespDTO oAuth2AccessTokenRespDTO = service.issueAccessToken(tokenReqDTO);
