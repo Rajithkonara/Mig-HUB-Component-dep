@@ -123,4 +123,13 @@ public class TokenRegenerationEventListener extends AbstractUserOperationEventLi
 
         return true;
     }
+
+    @Override
+    public boolean doPostUpdateCredentialByAdmin(String userName, Object credential, UserStoreManager userStoreManager) throws UserStoreException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Executing doPostUpdateCredentialByAdmin Service");
+        }
+        return this.doPostUpdateCredential(userName, credential, userStoreManager);
+    }
 }
