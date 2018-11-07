@@ -67,6 +67,10 @@ public class TokenRegenerationEventListener extends AbstractUserOperationEventLi
 
         applicationScope = new String[] {scope};
 
+        String threadLocalUsername = PrivilegedCarbonContext.getThreadLocalCarbonContext().getUsername();
+        String threadTenantDomain = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantDomain();
+        int tenantId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantId();
+
         try {
             OAuth2AccessTokenReqDTO tokenReqDTO = new OAuth2AccessTokenReqDTO();
             RequestParameter[] requestParameters = new RequestParameter[1];
@@ -84,12 +88,14 @@ public class TokenRegenerationEventListener extends AbstractUserOperationEventLi
 
             if (oauthapps != null) {
                 tokenReqDTO.setGrantType(GRANT_TYPE);
-                tokenReqDTO.setClientId(oauthapps[0].getOauthConsumerKey());
-                tokenReqDTO.setClientSecret(oauthapps[0].getOauthConsumerSecret());
-                tokenReqDTO.setCallbackURI(oauthapps[0].getCallbackUrl());
-                tokenReqDTO.setScope(applicationScope);
-                tokenReqDTO.setTenantDomain(TENANT_DOMAIN);
-                tokenReqDTO.setPkceCodeVerifier(null);
+
+                if(oauthapps.length > 0) {
+                    tokenReqDTO.setClientId(oauthapps[0].getOauthConsumerKey());
+                    tokenReqDTO.setClientSecret(oauthapps[0].getOauthConsumerSecret());
+                    tokenReqDTO.setCallbackURI(oauthapps[0].getCallbackUrl());
+                    tokenReqDTO.setScope(applicationScope);
+                    tokenReqDTO.setTenantDomain(TENANT_DOMAIN);
+                    tokenReqDTO.setPkceCodeVerifier(null);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Application Details Fetched Successfully \n" +
@@ -112,13 +118,20 @@ public class TokenRegenerationEventListener extends AbstractUserOperationEventLi
 
                 if (log.isDebugEnabled()) {
                     log.debug("Generated Access Token :" +oAuth2AccessTokenRespDTO.getAccessToken());
+                  }
+                } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("No Application Found for User: "+userName);
+                    }
                 }
-
-                PrivilegedCarbonContext.endTenantFlow();
-            }
-
+             }
         } catch (IdentityOAuthAdminException e) {
             log.error("Error while Fetching application details ", e);
+        } finally {
+            PrivilegedCarbonContext.endTenantFlow();
+            PrivilegedCarbonContext.getThreadLocalCarbonContext().setUsername(threadLocalUsername);
+            PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(threadTenantDomain);
+            PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenantId);
         }
 
         return true;
