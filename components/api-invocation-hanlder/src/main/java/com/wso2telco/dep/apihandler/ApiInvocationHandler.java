@@ -16,7 +16,6 @@
 package com.wso2telco.dep.apihandler;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,6 +37,7 @@ import com.wso2telco.dep.apihandler.dto.TokenDTO;
 import com.wso2telco.dep.apihandler.util.APIManagerDBUtil;
 import com.wso2telco.dep.apihandler.util.ReadPropertyFile;
 import com.wso2telco.dep.apihandler.util.TokenPoolUtil;
+import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.identity.oauth.IdentityOAuthAdminException;
 import org.wso2.carbon.identity.oauth.OAuthAdminService;
@@ -51,6 +51,8 @@ import org.apache.axis2.Constants;
 import org.apache.http.HttpStatus;
 import org.wso2.carbon.apimgt.gateway.handlers.Utils;
 
+import javax.cache.Cache;
+import javax.cache.Caching;
 import javax.xml.bind.DatatypeConverter;
 
 public class ApiInvocationHandler extends AbstractHandler {
@@ -64,8 +66,9 @@ public class ApiInvocationHandler extends AbstractHandler {
 	private static final String TEMP_AUTH_HEADER = "tempAuthVal";
 	private static final String TOKEN_TYPE = "Bearer ";
 	private static final String TOKEN_TYPE_BASIC = "Basic ";
-	private static Map<String, String> spToken = new HashMap();
 	private UserStoreManager userStoreManager;
+	private static final String APP_CONSUMER_KEY = "app_consumer_key";
+	private static final String SP_TOKEN_CACHE = "spTokenCache";
 
 	public ApiInvocationHandler() {
 
@@ -108,7 +111,7 @@ public class ApiInvocationHandler extends AbstractHandler {
 		Map headerMap = (Map) ((Axis2MessageContext) messageContext).getAxis2MessageContext()
 				.getProperty("TRANSPORT_HEADERS");
 
-			handleAuthRequest(headerMap.get(AUTH_HEADER), headerMap);
+			handleAuthRequest(headerMap.get(AUTH_HEADER), headerMap, messageContext);
 	}
 
 	private void handleUserInfoRequest(org.apache.synapse.MessageContext messageContext, Map headerMap) {
@@ -121,7 +124,7 @@ public class ApiInvocationHandler extends AbstractHandler {
 		processTokenResponse(headerMap, clientId);
 	}
 
-	private void handleAuthRequest(Object authorization, Map headerMap) throws UserStoreException {
+	private void handleAuthRequest(Object authorization, Map headerMap, MessageContext messageContext) throws UserStoreException {
 
 		String username = getUserNamePassword((String) authorization, 0);
 		String password = getUserNamePassword((String) authorization, 1);
@@ -144,7 +147,7 @@ public class ApiInvocationHandler extends AbstractHandler {
 				}
 				consumerKey = oauthapps[0].getOauthConsumerKey();
 				PrivilegedCarbonContext.endTenantFlow();
-
+				messageContext.setProperty(APP_CONSUMER_KEY, consumerKey);
 				processTokenResponse(headerMap, consumerKey);
 			} else {
 				throw new UserStoreException("Invalid Credentials");
@@ -182,12 +185,23 @@ public class ApiInvocationHandler extends AbstractHandler {
 
 	private void processTokenResponse(Map headerMap, String clientId) {
 		String token = null;
+
+        Cache spToken =  Caching.getCacheManager(APIConstants.API_MANAGER_CACHE_MANAGER).getCache(SP_TOKEN_CACHE);
+
 		if (spToken.containsKey(clientId)) {
 			token = (String) spToken.get(clientId);
 		} else {
 			token = APIManagerDBUtil.getTokenDetailsFromAPIManagerDB(clientId).getAccessToken();
-			spToken.put(clientId, token);
+			if (token != null && !token.isEmpty()) {
+				spToken.put(clientId, token);
+			}
 		}
+
+		if (log.isDebugEnabled())
+		{
+			log.debug("Bearer Token :  " + token);
+		}
+
 		headerMap.put("Authorization", TOKEN_TYPE + token);
 	}
 
