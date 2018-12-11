@@ -70,3 +70,20 @@ Example Syanpse file conating the API Invocation Handler
    </handlers>
     ```
 ------------------------
+
+#Adding tokenregenerator
+
+Copy com.wso2telco.dep.tokenregenerator-1.0.0.jar to <MIG_SERVER>/repository/components/dropins/
+
+#Update the _auth_failure_handler_.xml
+
+Add the below lines to _auth_failure_handler_.xml in repository/deployment/server/synapse-configs/default/sequences
+  
+Add these line below the <property name="error_message_type" value="application/xml"/>
+
+```
+    <property expression="$ctx:app_consumer_key" name="app_consumer_key"/>
+    <filter regex="900901" source="get-property('ERROR_CODE')">
+        <class name="com.wso2telco.dep.apihandler.CacheUpdateMediator"/>
+    </filter>
+```
