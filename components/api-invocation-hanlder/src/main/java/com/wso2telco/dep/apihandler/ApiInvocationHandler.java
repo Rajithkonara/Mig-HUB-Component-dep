@@ -255,6 +255,7 @@ public class ApiInvocationHandler extends AbstractHandler {
 		org.apache.axis2.context.MessageContext axis2MC = ((Axis2MessageContext) messageContext).
 				getAxis2MessageContext();
 		Mediator sequence = messageContext.getSequence(APISecurityConstants.API_AUTH_FAILURE_HANDLER);
+
 		// Invoke the custom error handler specified by the user
 		if (sequence != null && !sequence.mediate(messageContext)) {
 			// If needed user should be able to prevent the rest of the fault handling
