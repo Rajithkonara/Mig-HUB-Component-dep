@@ -248,8 +248,6 @@ public class ApiInvocationHandler extends AbstractHandler {
 	}
 
 	private void handleAuthFailure(MessageContext messageContext, Exception e) {
-//		messageContext.setProperty(SynapseConstants.ERROR_CODE, e);
-//		messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, e);
 		messageContext.setProperty(SynapseConstants.ERROR_CODE, "900901");
 		messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, "Invalid authentication information provided");
 		messageContext.setProperty(SynapseConstants.ERROR_EXCEPTION, e);
