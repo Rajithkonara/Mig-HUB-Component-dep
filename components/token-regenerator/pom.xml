@@ -31,16 +31,20 @@
             <artifactId>org.wso2.carbon.user.core</artifactId>
             <version>4.4.3</version>
         </dependency>
+
         <dependency>
-            <groupId>org.wso2.carbon.identity</groupId>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.mgt</artifactId>
-            <version>5.2.0</version>
+            <version>5.11.256</version>
         </dependency>
+
         <dependency>
-            <groupId>org.wso2.carbon.identity</groupId>
-            <artifactId>org.wso2.carbon.identity.base</artifactId>
-            <version>5.2.0</version>
+            <groupId>org.wso2.carbon.identity.inbound.auth.oauth2</groupId>
+            <artifactId>org.wso2.carbon.identity.oauth</artifactId>
+            <version>6.0.14</version>
         </dependency>
+
+
         <dependency>
             <groupId>org.wso2.carbon.apimgt</groupId>
             <artifactId>org.wso2.carbon.apimgt.impl</artifactId>

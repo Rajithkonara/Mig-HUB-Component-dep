@@ -22,6 +22,7 @@ import org.wso2.carbon.identity.oauth.IdentityOAuthAdminException;
 import org.wso2.carbon.identity.oauth.OAuthAdminService;
 import org.wso2.carbon.identity.oauth.dto.OAuthConsumerAppDTO;
 import org.wso2.carbon.identity.oauth2.OAuth2Service;
+import org.wso2.carbon.identity.oauth2.bean.OAuthClientAuthnContext;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2AccessTokenReqDTO;
 import org.wso2.carbon.identity.oauth2.dto.OAuth2AccessTokenRespDTO;
 import org.wso2.carbon.identity.oauth2.model.RequestParameter;
@@ -114,7 +115,12 @@ public class TokenRegenerationEventListener extends AbstractUserOperationEventLi
                     log.debug("Starting to issue AccessToken for User "+userName);
                 }
 
-                OAuth2AccessTokenRespDTO oAuth2AccessTokenRespDTO = service.issueAccessToken(tokenReqDTO);
+                    OAuthClientAuthnContext oAuthClientAuthnContext = new OAuthClientAuthnContext();
+                    oAuthClientAuthnContext.setClientId(oauthapps[0].getOauthConsumerKey());
+                    oAuthClientAuthnContext.setAuthenticated(true);
+                    tokenReqDTO.setoAuthClientAuthnContext(oAuthClientAuthnContext);
+
+                    OAuth2AccessTokenRespDTO oAuth2AccessTokenRespDTO = service.issueAccessToken(tokenReqDTO);
 
                 if (log.isDebugEnabled()) {
                     log.debug("Generated Access Token :" +oAuth2AccessTokenRespDTO.getAccessToken());
